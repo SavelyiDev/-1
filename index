@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Технологические зависимости </title>
+    <link rel= 'stylesheet' href="style.css" >
+</head>
+<body>
+    <h1>Технологические зависимости!</h1>
+    <p>Технологическая зависимость - это расстройство,при котором человек проводит большую часть времени с телефонами, компьютерами и другими подобными технологическими устройствами.<p>
+    <ul>
+             <p>Человек, страдающий технологической зависимостью, не переживает по этому поводу и не может легко бросить эту пагубную привычку.<p>
+    </ul>
+    <h2>Зависимость от социальных сетей</h2>
+    <ul>
+             <p>Непреодолимое желание постоянно проверять ленту новостей, публиковать обновления, что приводит к снижению продуктивности и проблемам в личных отношениях.<p>
+    </ul>
+    <h2>Игровая зависимость</h2>
+    <ul>
+             <p>Чрезмерное увлечение онлайн-играми, когда виртуальный мир заменяет реальные интересы и обязанности.<p>
+    </ul>
+    <h2>Информационная перегрузка / зависимость от новостей</h2>
+    <ul>
+             <p>Постоянная потребность быть в курсе всех событий, "серфинг" в интернете без определенной цели, что вызывает тревогу и отвлекает от работы.<p>
+    </ul>   
+     <img src="https://gazeta-pro.ru/wp-content/uploads/2023/12/cifrovaya-zavisimost-17.jpeg" alt="Image 1">
+</body>
+</html>
+<iframe src="https://www.meteoblue.com/en/weather/widget/daily/ip_romania_675514?geoloc=fixed&days=7&tempunit=CELSIUS&windunit=METER_PER_SECOND&precipunit=MILLIMETER&coloured=monochrome&pictoicon=0&maxtemperature=1&mintemperature=1&windspeed=1&windgust=0&winddirection=1&uv=0&humidity=0&precipitation=1&precipitationprobability=0&spot=0&pressure=0&layout=light&user_key=3f9a0f7e76271fa1&embed_key=eaf1e31072206820&sig=e0e33a288debdb1cb32bbe18f7601840586620ab55b248c6d29ea7b523c23778" frameborder="0" scrolling="NO" allowtransparency="true" sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox" style="width: 378px;height: 349px;border: 0;overflow: hidden;"></iframe><div><!-- DO NOT REMOVE THIS LINK --><a href="https://www.meteoblue.com/en/weather/week/index" target="_blank" rel="noopener">meteoblue</a></div>
+<div style="position:relative;overflow:hidden;"><a href="https://yandex.ru/maps/2/saint-petersburg/?utm_medium=mapframe&utm_source=maps" style="color:#eee;font-size:12px;position:absolute;top:0px;">Санкт‑Петербург</a><a href="https://yandex.ru/maps/2/saint-petersburg/?ll=30.328952%2C59.912483&mode=routes&rtext=~59.910347%2C30.324610&rtt=auto&ruri=~&utm_medium=mapframe&utm_source=maps&z=14.2" style="color:#eee;font-size:12px;position:absolute;top:14px;">Яндекс Карты</a><iframe src="https://yandex.ru/map-widget/v1/?ll=30.328952%2C59.912483&mode=routes&rtext=~59.910347%2C30.324610&rtt=auto&ruri=~&z=14.2" width="560" height="400" frameborder="1" allowfullscreen="true" style="position:relative;"></iframe></div>
