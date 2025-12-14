@@ -1,0 +1,27 @@
+h1 {
+    color:rgb(70, 68, 68);
+}
+img{
+    width: 25%;
+    height: 25%;
+}
+body{
+    background-color:rgb(255, 255, 255) ;
+}
+h2 {
+    color:rgb(70, 68, 68);
+}
+p {
+    color:rgb(70, 68, 68);
+}
+h1 {
+  animation: color-change 3s infinite;
+}
+@keyframes color-change {
+  0%   { color: rgb(0, 0, 0); 
+        font-size:  40px;}
+  50%  { color: rgba(73, 72, 72, 0.938);
+        font-size:  70px;}
+  100% { color: rgb(0, 0, 0);
+        font-size:  20px; }
+}
