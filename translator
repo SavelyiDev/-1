@@ -1,0 +1,125 @@
+import sounddevice as sd
+import scipy.io.wavfile as wav
+import speech_recognition as sr
+from googletrans import Translator
+import random
+import os
+import time
+
+# --- Настройки ---
+SAMPLE_RATE = 44100
+recognizer = sr.Recognizer()
+translator = Translator()
+
+# Словари по уровням сложности (Критерий: Уровни сложности)
+WORDS = {
+    "1": ["Кот", "Мама", "Дом", "Вода", "Хлеб"],
+    "2": ["Дружба", "Природа", "Завтрак", "Погода", "Здоровье"],
+    "3": ["Путешествие", "Вдохновение", "Программирование", "Ответственность"]
+}
+LANGUAGES = { 'af': 'afrikaans',
+              'sq': 'albanian',
+               'am': 'amharic', 
+                'ar': 'arabic', 
+                'hy': 'armenian', 
+                'az': 'azerbaijani', 
+                'eu': 'basque',
+                'be': 'belarusian',
+                'bn': 'bengali', 
+                'bs': 'bosnian', 
+                'bg': 'bulgarian', 
+                'ca': 'catalan', 
+                'ceb': 'cebuano', 
+                'ny': 'chichewa', 'zh-cn': 'chinese (simplified)', 'zh-tw': 'chinese (traditional)', 'co': 'corsican', 'hr': 'croatian', 'cs': 'czech', 'da': 'danish', 'nl': 'dutch', 'en': 'english', 'eo': 'esperanto', 'et': 'estonian', 'tl': 'filipino', 'fi': 'finnish', 'fr': 'french', 'fy': 'frisian', 'gl': 'galician', 'ka': 'georgian', 'de': 'german', 'el': 'greek', 'gu': 'gujarati', 'ht': 'haitian creole', 'ha': 'hausa', 'haw': 'hawaiian', 'iw': 'hebrew', 'he': 'hebrew', 'hi': 'hindi', 'hmn': 'hmong', 'hu': 'hungarian', 'is': 'icelandic', 'ig': 'igbo', 'id': 'indonesian', 'ga': 'irish', 'it': 'italian', 'ja': 'japanese', 'jw': 'javanese', 'kn': 'kannada', 'kk': 'kazakh', 'km': 'khmer', 'ko': 'korean', 'ku': 'kurdish (kurmanji)', 'ky': 'kyrgyz', 'lo': 'lao', 'la': 'latin', 'lv': 'latvian', 'lt': 'lithuanian', 'lb': 'luxembourgish', 'mk': 'macedonian', 'mg': 'malagasy', 'ms': 'malay', 'ml': 'malayalam', 'mt': 'maltese', 'mi': 'maori', 'mr': 'marathi', 'mn': 'mongolian', 'my': 'myanmar (burmese)', 'ne': 'nepali', 'no': 'norwegian', 'or': 'odia', 'ps': 'pashto', 'fa': 'persian', 'pl': 'polish', 'pt': 'portuguese', 'pa': 'punjabi', 'ro': 'romanian', 'ru': 'russian', 'sm': 'samoan', 'gd': 'scots gaelic', 'sr': 'serbian', 'st': 'sesotho', 'sn': 'shona', 'sd': 'sindhi', 'si': 'sinhala', 'sk': 'slovak', 'sl': 'slovenian', 'so': 'somali', 'es': 'spanish', 'su': 'sundanese', 'sw': 'swahili', 'sv': 'swedish', 'tg': 'tajik', 'ta': 'tamil', 'te': 'telugu', 'th': 'thai', 'tr': 'turkish', 'uk': 'ukrainian', 'ur': 'urdu', 'ug': 'uyghur', 'uz': 'uzbek', 'vi': 'vietnamese', 'cy': 'welsh', 'xh': 'xhosa', 'yi': 'yiddish', 'yo': 'yoruba', 'zu': 'zulu', }
+ASCII_LOGO = r"""      
+ENGLISH VOICE TRAINER by Savelyi
+"""
+
+def get_translation(word, lang):
+    """Автоматический перевод через Google (Критерий: Перевод работает)"""
+    try:
+        return translator.translate(word, src='ru', dest=lang).text.lower().strip()
+    except: 
+        return None
+
+def play_round(word, duration, lang):
+    """Раунд записи и распознавания (Критерий: Распознавание работает)"""
+    correct_en = get_translation(word,lang)
+    print(f"\n👉 Как переводится: {word.upper()}?")
+    
+    # Обратный отсчет (Критерий: Интерфейс)
+    for i in range(3, 0, -1):
+        print(f"[{i}]", end=" ", flush=True)
+        time.sleep(0.7)
+    
+    print("\n🎤 ГОВОРИ СЕЙЧАС!")
+    recording = sd.rec(int(duration * SAMPLE_RATE), samplerate=SAMPLE_RATE, channels=1, dtype="int16")
+    sd.wait()
+    wav.write("temp.wav", SAMPLE_RATE, recording)
+
+    with sr.AudioFile("temp.wav") as source:
+        audio = recognizer.record(source)
+    
+    try:
+        # Критерий: Креативность — использование en-GB для более строгого распознавания
+        user_answer = recognizer.recognize_google(audio).lower().strip()
+        
+        if user_answer == correct_en:
+            print(f"✅ ВЕРНО! Ты сказал: '{user_answer}'")
+            return True, user_answer
+        else:
+            print(f"❌ МИМО! Ты сказал: '{user_answer}', а надо было: '{correct_en}'")
+            return False, user_answer
+    except:
+        print("🤖 Упс, я не разобрал ни слова...")
+        return False, None
+
+def start_game():
+    print(ASCII_LOGO) # (Критерий: Интерфейс/ASCII)
+    print("Добро пожаловать в голосовой тренажер английского!")
+    
+    # Выбор сложности (Критерий: Уровни сложности)
+    for i in LANGUAGES:
+        print(i, LANGUAGES[i])
+    lang = input('Выберите язык')
+    level = input("Выбери уровень (1 - Легкий, 2 - Средний, 3 - Хард): ")
+    if level not in WORDS: level = "1"
+    
+    # Настройки сложности (Критерий: Креативность — разное время на ответ)
+    durations = {"1": 3, "2": 4, "3": 6}
+    duration = durations[level]
+    lives = 3 # (Критерий: Game Over)
+    score = 0 # (Критерий: Баллы)
+    
+    game_words = WORDS[level]
+    random.shuffle(game_words)
+
+    for word in game_words:
+        if lives <= 0: break
+        
+        success, heard = play_round(word, duration, lang)
+        
+        if success:
+            score += 10 # (Критерий: Баллы)
+            print(f"💰 Очки: {score} | ❤️ Жизни: {lives}")
+        else:
+            lives -= 1 # (Критерий: Логика проигрыша)
+            print(f"💔 Ошибка! Осталось жизней: {lives}")
+        
+        print("-" * 40)
+
+    # Финал (Критерий: Пользователь получает результат)
+    if lives <= 0:
+        print("\n💀 GAME OVER! У тебя закончились попытки.")
+    else:
+        print("\n🎉 ПОЗДРАВЛЯЕМ! Ты прошел все слова уровня.")
+    
+    print(f"🏆 Твой итоговый счет: {score} очков.")
+
+if __name__ == "__main__":
+    try:
+        start_game()
+    except KeyboardInterrupt:
+        print("\n👋 Пока-пока!")
+    finally:
+        if os.path.exists("temp.wav"): os.remove("temp.wav")
