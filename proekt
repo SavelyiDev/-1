@@ -1,0 +1,271 @@
+import random
+import os
+import sqlite3
+import telebot
+from telebot import types
+
+# Твой рабочий токен бота
+TOKEN = "8976830733:AAFYzo9Ceh92mvJlDZO5GHi8RKlNWQsIai8"
+bot = telebot.TeleBot(TOKEN)
+
+# --- СПИСОК ЕЖЕДНЕВНЫХ ЧЕЛЛЕНДЖЕЙ ---
+CHALLENGES = [
+    "🚫 Не покупай сегодня кофе в одноразовом стаканчике. Возьми напиток в свою термокружку или выпей его в кафе!",
+    "🔌 Выключи сегодня на ночь компьютер, телевизор и зарядные устройства из розеток. Режим ожидания тоже тратит энергию!",
+    "🛍️ Отправься в магазин с тканевым шоппером вместо покупки пластикового пакета на кассе.",
+    "🥦 Устрой сегодня 'день без мяса'. Попробуй приготовить полностью растительное блюдо — это сильно экономит ресурсы Земли.",
+    "🚶‍♂️ Если нужно пройти меньше двух остановок, пройдись пешком или прокатись на велосипеде вместо автобуса или машины.",
+    "💧 Закрывай кран, пока чистишь зубы или намыливаешь посуду. Так ты сбережешь до 10 литров чистой воды за раз!",
+    "🔋 Найди дома использованные батарейки и отнеси их в специальный бокс для утилизации (они есть во многих супермаркетах)."
+]
+
+# --- РАБОТА С БАЗОЙ ДАННЫХ (SQLite) ---
+def init_db():
+    conn = sqlite3.connect("ecotrack.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS test_results (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            chat_id INTEGER,
+            score INTEGER,
+            date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+def save_result(chat_id, score):
+    conn = sqlite3.connect("ecotrack.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO test_results (chat_id, score) VALUES (?, ?)", (chat_id, score))
+    conn.commit()
+    conn.close()
+
+def get_user_history(chat_id):
+    conn = sqlite3.connect("ecotrack.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT score, date FROM test_results WHERE chat_id = ? ORDER BY date DESC LIMIT 5", (chat_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+init_db()
+
+# Временная память для сессий
+user_states = {}
+
+# --- КЛАВИАТУРЫ ---
+def main_menu():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(types.KeyboardButton("📊 Пройти эко-тест"))
+    markup.add(types.KeyboardButton("🎯 Эко-вызов на сегодня"))
+    markup.add(types.KeyboardButton("📈 Моя динамика"), types.KeyboardButton("🌱 Полезные эко-привычки"))
+    return markup
+
+def transport_inline():
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    markup.add(
+        types.InlineKeyboardButton("🚗 На машине", callback_data="trans_car"),
+        types.InlineKeyboardButton("🚌 Автобус / Метро", callback_data="trans_public"),
+        types.InlineKeyboardButton("🚶‍♂️ Пешком / Велосипед", callback_data="trans_foot")
+    )
+    return markup
+
+def diet_inline():
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    markup.add(
+        types.InlineKeyboardButton("🥩 Часто ем мясо", callback_data="diet_meat"),
+        types.InlineKeyboardButton("🥦 Я вегетарианец / веган", callback_data="diet_veg")
+    )
+    return markup
+
+def waste_inline():
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    markup.add(
+        types.InlineKeyboardButton("🗑️ Выбрасываю всё в один бак", callback_data="waste_none"),
+        types.InlineKeyboardButton("♻️ Сортирую часть (пластик/батарейки)", callback_data="waste_part"),
+        types.InlineKeyboardButton("🌍 Сортирую абсолютно всё", callback_data="waste_full")
+    )
+    return markup
+
+def energy_inline():
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    markup.add(
+        types.InlineKeyboardButton("💡 Обычные лампы, технику не выключаю", callback_data="energy_high"),
+        types.InlineKeyboardButton("🔋 Везде LED-лампы, выключаю за собой свет", callback_data="energy_low")
+    )
+    return markup
+
+# --- ОБРАБОТКА КНОПОК ---
+@bot.message_handler(commands=['start', 'help'])
+def send_welcome(message):
+    files = os.listdir('/content/photo')
+    print(files)
+    random_file = random.choice(files)
+    print(random_file)
+    exit()
+    with open(f'/content/photo/{random_file}','rb') as photo:
+      bot.send_photo(message.chat.id,photo)
+    bot.send_message(
+        message.chat.id,
+        f"Привет, {message.from_user.first_name}! 👋\n\n"
+        "Я EcoTrack Pro. Я помогу рассчитать твой углеродный след, выдам ежедневные челленджи и покажу красивый график твоей эко-динамики!",
+        reply_markup=main_menu(),
+        parse_mode="Markdown"
+    )
+
+@bot.message_handler(func=lambda message: message.text == "🌱 Полезные эко-привычки")
+def show_habits(message):
+    text = (
+        "🌍 **Как легко снизить выбросы CO₂ ежедневно:**\n\n"
+        "1. **Выключай технику из розеток.** Компьютеры и ТВ в режиме ожидания всё равно потребляют около 10% энергии.\n"
+        "2. **Ходи за покупками с шоппером.** На создание и утилизацию одного пластикового пакета тратится куча нефтяных ресурсов.\n"
+        "3. **Сократи потребление говядины.** Животноводство генерирует метан — один из самых сильных парниковых газов."
+    )
+    bot.send_message(message.chat.id, text, reply_markup=main_menu(), parse_mode="Markdown")
+
+@bot.message_handler(func=lambda message: message.text == "🎯 Эко-вызов на сегодня")
+def show_challenge(message):
+    """Выдает случайный эко-челлендж из списка"""
+    random_challenge = random.choice(CHALLENGES)
+    text = f"🎯 **Твой эко-вызов на сегодня:**\n\n{random_challenge}\n\n*Примешь этот вызов? Сделай планету немного чище уже сегодня!*"
+    bot.send_message(message.chat.id, text, parse_mode="Markdown")
+
+@bot.message_handler(func=lambda message: message.text == "📈 Моя динамика")
+def show_history(message):
+    history = get_user_history(message.chat.id)
+    if not history:
+        bot.send_message(message.chat.id, "❌ Ты еще ни разу не проходил эко-тест. Нажми на кнопку **«📊 Пройти эко-тест»**!")
+        return
+
+    text = "📈 **История твоих последних тестов и графики:**\n\n"
+    for i, (score, date) in enumerate(reversed(history), 1):
+        clean_date = date.split()[0] # Берем только дату ГГГГ-ММ-ДД
+
+        # Строим визуальный график-бар из кубиков (1 кубик = 50 кг CO2)
+        cubes_count = max(1, round(score / 50))
+        if score <= 120:
+            chart = "🟩" * cubes_count
+        elif score <= 280:
+            chart = "🟨" * cubes_count
+        else:
+            chart = "🟥" * cubes_count
+
+        text += f"{i}. {clean_date} — **{score} кг**\n`{chart}`\n\n"
+
+    text += "*Цель: сделать полоску из зеленых кубиков как можно короче!*"
+    bot.send_message(message.chat.id, text, parse_mode="Markdown")
+
+@bot.message_handler(func=lambda message: message.text == "📊 Пройти эко-тест")
+def start_calculator(message):
+    user_states[message.chat.id] = {"score": 0, "rec": ""}
+    bot.send_message(
+        message.chat.id,
+        "🟢 **Шаг 1 из 4:** Какой транспорт ты используешь чаще всего для поездок?",
+        reply_markup=transport_inline()
+    )
+
+# --- ОБРАБОТКА CALLBACK ДЛЯ ИНЛАЙН-КНОПОК ---
+@bot.callback_query_handler(func=lambda call: True)
+def handle_query(call):
+    chat_id = call.message.chat.id
+
+    if chat_id not in user_states:
+        bot.answer_callback_query(call.id, "Сессия устарела. Запусти тест заново через меню.", show_alert=True)
+        bot.edit_message_reply_markup(chat_id, call.message.message_id, reply_markup=None)
+        return
+
+    data = call.data
+
+    # Шаг 1: Транспорт
+    if data.startswith("trans_"):
+        if data == "trans_car":
+            user_states[chat_id]["score"] += 220
+            user_states[chat_id]["rec"] += "• Твой автомобиль сильно влияет на климат. Старайся чаще ходить пешком на короткие дистанции. 🚗\n"
+        elif data == "trans_public":
+            user_states[chat_id]["score"] += 60
+            user_states[chat_id]["rec"] += "• Автобус и метро — хороший выбор. За счет массовости поездок удельный след минимален. 🚌\n"
+        elif data == "trans_foot":
+            user_states[chat_id]["score"] += 0
+            user_states[chat_id]["rec"] += "• Идеальный выбор транспорта! Пешие прогулки не оставляют углеродного следа. 🚶‍♂️\n"
+
+        bot.edit_message_text(
+            chat_id=chat_id, message_id=call.message.message_id,
+            text="🟢 **Шаг 2 из 4:** Как выглядит твой рацион питания?", reply_markup=diet_inline()
+        )
+        bot.answer_callback_query(call.id)
+        return  # ОСТАНАВЛИВАЕМ ФУНКЦИЮ, ЖДЕМ СЛЕДУЮЩЕГО НАЖАТИЯ
+
+    # Шаг 2: Диета
+    elif data.startswith("diet_"):
+        if data == "diet_meat":
+            user_states[chat_id]["score"] += 140
+            user_states[chat_id]["rec"] += "• Мясная промышленность оставляет огромный след. Попробуй устраивать один день в неделю без мяса. 🥩\n"
+        elif data == "diet_veg":
+            user_states[chat_id]["score"] += 30
+            user_states[chat_id]["rec"] += "• Растительная диета экономит воду и ресурсы планеты. Отличный выбор! 🥦\n"
+
+        bot.edit_message_text(
+            chat_id=chat_id, message_id=call.message.message_id,
+            text="🟢 **Шаг 3 из 4:** Сортируешь ли ты бытовые отходы и мусор?", reply_markup=waste_inline()
+        )
+        bot.answer_callback_query(call.id)
+        return  # ОСТАНАВЛИВАЕМ ФУНКЦИЮ, ЖДЕМ СЛЕДУЮЩЕГО НАЖАТИЯ
+
+    # Шаг 3: Мусор
+    elif data.startswith("waste_"):
+        if data == "waste_none":
+            user_states[chat_id]["score"] += 90
+            user_states[chat_id]["rec"] += "• Смешанный мусор отправляется на полигоны. Начни хотя бы со сдачи батареек и пластика. 🗑️\n"
+        elif data == "waste_part":
+            user_states[chat_id]["score"] += 45
+            user_states[chat_id]["rec"] += "• Хорошее начало! Разделение пластика заметно снижает нагрузку на экосистемы. ♻️\n"
+        elif data == "waste_full":
+            user_states[chat_id]["score"] += 10
+            user_states[chat_id]["rec"] += "• Потрясающе! Полная сортировка отходов минимизирует замусоривание планеты. 🌍\n"
+
+        bot.edit_message_text(
+            chat_id=chat_id, message_id=call.message.message_id,
+            text="🟢 **Шаг 4 из 4:** Как дома расходуется электроэнергия?", reply_markup=energy_inline()
+        )
+        bot.answer_callback_query(call.id)
+        return  # ОСТАНАВЛИВАЕМ ФУНКЦИЮ, ЖДЕМ СЛЕДУЮЩЕГО НАЖАТИЯ
+
+    # Шаг 4: Электроэнергия и ФИНАЛ
+    elif data.startswith("energy_"):
+        if data == "energy_high":
+            user_states[chat_id]["score"] += 80
+            user_states[chat_id]["rec"] += "• Потребление энергии в быту вносит большой вклад в выбросы ТЭЦ. Попробуй заменить лампы на светодиодные (LED). 💡\n"
+        elif data == "energy_low":
+            user_states[chat_id]["score"] += 20
+            user_states[chat_id]["rec"] += "• Отличная бытовая осознанность! Энергосберегающие лампы и выключение приборов берегут ресурсы. 🔌\n"
+
+        # Этот код сработает только на 4 шаге, когда переменные гарантированно заполнены
+        final_score = user_states[chat_id]["score"]
+        recommendations = user_states[chat_id]["rec"]
+
+        if final_score <= 120:
+            status = "👑 **Эко-Герой** (Минимальный след!)"
+        elif final_score <= 280:
+            status = "🌱 **Осознанный Житель** (Хороший баланс)"
+        else:
+            status = "🏭 **Углеродный Гигант** (Высокая нагрузка на климат)"
+
+        save_result(chat_id, final_score)
+
+        result_text = (
+            "📊 **Твой экологический профиль готов!**\n\n"
+            f"Твой след: около **{final_score} кг CO₂** в месяц.\n"
+            f"Твой текущий статус: {status}\n\n"
+            "💡 **Персональные советы по улучшению:**\n"
+            f"{recommendations}"
+        )
+
+        bot.edit_message_text(
+            chat_id=chat_id, message_id=call.message.message_id,
+            text=result_text, reply_markup=None, parse_mode="Markdown"
+        )
+        bot.answer_callback_query(call.id)
+
+        del user_states[chat_id]
+bot.infinity_polling()
